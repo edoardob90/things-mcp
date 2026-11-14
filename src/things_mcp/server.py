@@ -9,6 +9,7 @@ import things
 from fastmcp import FastMCP
 from fastmcp.server.auth import AccessToken, TokenVerifier
 from fastmcp.tools.tool import ToolResult
+from mcp.types import ToolAnnotations
 from .formatters import (
     format_todo, format_project, format_area, format_tag, format_heading,
     format_repeating_template,
@@ -28,6 +29,25 @@ MIN_AUTH_TOKEN_LENGTH = 32
 
 # Initialize FastMCP server
 mcp = FastMCP("Things")
+
+# Tool annotations (MCP spec): a human-readable title plus behavior hints that
+# clients use to label tools and decide which need confirmation. Titles follow
+# the wording of Things' own Shortcuts actions where one exists
+# (https://culturedcode.com/things/support/articles/9596775/).
+# Every tool works on the local Things database or app, so none is open-world.
+READ = dict(readOnlyHint=True, openWorldHint=False)
+# Adds new items; never changes or removes existing ones.
+CREATE = dict(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
+# Changes existing items in place (e.g. replacing tags, completing, moving);
+# Things notes that such edits cannot be undone.
+EDIT = dict(readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False)
+# Opens a list, item or search in the Things app; changes no data.
+SHOW = dict(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
+
+
+def _annotations(title, hints):
+    return ToolAnnotations(title=title, **hints)
+
 
 
 class BearerTokenVerifier(TokenVerifier):
@@ -230,7 +250,7 @@ def _error_result(msg):
 
 
 # List view tools
-@mcp.tool
+@mcp.tool(title="Get Inbox", annotations=_annotations("Get Inbox", READ))
 async def get_inbox(limit: int = None, offset: int = 0) -> ToolResult:
     """Get todos from Inbox
 
@@ -244,7 +264,7 @@ async def get_inbox(limit: int = None, offset: int = 0) -> ToolResult:
     todos = things.inbox(include_items=True)
     return _paginate_result(todos, format_todo, limit, offset, "No items found")
 
-@mcp.tool
+@mcp.tool(title="Get Today", annotations=_annotations("Get Today", READ))
 async def get_today(limit: int = None, offset: int = 0) -> ToolResult:
     """Get todos due today
 
@@ -263,7 +283,7 @@ async def get_today(limit: int = None, offset: int = 0) -> ToolResult:
     todos = filter_someday_project_tasks(todos or [])
     return _paginate_result(todos, format_todo, limit, offset, "No items found")
 
-@mcp.tool
+@mcp.tool(title="Get Upcoming", annotations=_annotations("Get Upcoming", READ))
 async def get_upcoming(limit: int = None, offset: int = 0) -> ToolResult:
     """Get upcoming todos, including the next instance of each repeating todo
 
@@ -312,7 +332,7 @@ async def get_repeating_templates(limit: int = None, offset: int = 0) -> ToolRes
         templates, format_repeating_template, limit, offset, "No repeating todos found"
     )
 
-@mcp.tool
+@mcp.tool(title="Get Anytime", annotations=_annotations("Get Anytime", READ))
 async def get_anytime(limit: int = None, offset: int = 0) -> ToolResult:
     """Get todos from Anytime list
 
@@ -328,7 +348,7 @@ async def get_anytime(limit: int = None, offset: int = 0) -> ToolResult:
     todos = filter_someday_project_tasks(todos or [])
     return _paginate_result(todos, format_todo, limit, offset, "No items found")
 
-@mcp.tool
+@mcp.tool(title="Get Someday", annotations=_annotations("Get Someday", READ))
 async def get_someday(limit: int = None, offset: int = 0) -> ToolResult:
     """Get todos from Someday list, including tasks in Someday projects
 
@@ -382,7 +402,7 @@ def _stop_datetime(todo):
     return _item_datetime(todo, 'stop_date')
 
 
-@mcp.tool
+@mcp.tool(title="Get Logbook", annotations=_annotations("Get Logbook", READ))
 async def get_logbook(period: str = "7d", limit: int = 50, offset: int = 0,
                       project_uuid: str = None) -> ToolResult:
     """Get completed and canceled todos from Logbook, defaults to last 7 days, optionally filtered by project
@@ -423,7 +443,7 @@ async def get_logbook(period: str = "7d", limit: int = 50, offset: int = 0,
 
     return _paginate_result(todos, format_todo, limit, offset, "No items found")
 
-@mcp.tool
+@mcp.tool(title="Get Trash", annotations=_annotations("Get Trash", READ))
 async def get_trash(limit: int = None, offset: int = 0) -> ToolResult:
     """Get trashed todos
 
@@ -438,7 +458,7 @@ async def get_trash(limit: int = None, offset: int = 0) -> ToolResult:
     return _paginate_result(todos, format_todo, limit, offset, "No items found")
 
 # Basic operations
-@mcp.tool
+@mcp.tool(title="Get To-Dos", annotations=_annotations("Get To-Dos", READ))
 async def get_todos(project_uuid: str = None, include_items: bool = True,
                     limit: int = None, offset: int = 0) -> ToolResult:
     """Get todos from Things, optionally filtered by project
@@ -463,7 +483,7 @@ async def get_todos(project_uuid: str = None, include_items: bool = True,
     todos = things.todos(project=project_uuid, start=None, include_items=include_items)
     return _paginate_result(todos, format_todo, limit, offset, "No todos found")
 
-@mcp.tool
+@mcp.tool(title="Get Projects", annotations=_annotations("Get Projects", READ))
 async def get_projects(include_items: bool = False, limit: int = None, offset: int = 0) -> ToolResult:
     """Get all projects from Things
 
@@ -481,7 +501,7 @@ async def get_projects(include_items: bool = False, limit: int = None, offset: i
         limit, offset, "No projects found"
     )
 
-@mcp.tool
+@mcp.tool(title="Get Areas", annotations=_annotations("Get Areas", READ))
 async def get_areas(include_items: bool = False, limit: int = None, offset: int = 0) -> ToolResult:
     """Get all areas from Things
 
@@ -500,7 +520,7 @@ async def get_areas(include_items: bool = False, limit: int = None, offset: int 
     )
 
 # Tag operations
-@mcp.tool
+@mcp.tool(title="Get Tags", annotations=_annotations("Get Tags", READ))
 async def get_tags(include_items: bool = False, limit: int = None, offset: int = 0) -> ToolResult:
     """Get all tags
 
@@ -518,7 +538,7 @@ async def get_tags(include_items: bool = False, limit: int = None, offset: int =
         limit, offset, "No tags found"
     )
 
-@mcp.tool
+@mcp.tool(title="Get Tagged Items", annotations=_annotations("Get Tagged Items", READ))
 async def get_tagged_items(tag: str, limit: int = None, offset: int = 0) -> ToolResult:
     """Get items with a specific tag
 
@@ -533,7 +553,7 @@ async def get_tagged_items(tag: str, limit: int = None, offset: int = 0) -> Tool
     todos = things.todos(tag=tag, include_items=True)
     return _paginate_result(todos, format_todo, limit, offset, f"No items found with tag '{tag}'")
 
-@mcp.tool
+@mcp.tool(title="Get Tag Usage", annotations=_annotations("Get Tag Usage", READ))
 async def get_tag_usage(only_unused: bool = False) -> str:
     """Report how many items use each tag, sorted by usage (highest first).
 
@@ -567,7 +587,7 @@ async def get_tag_usage(only_unused: bool = False) -> str:
 
     return "\n".join(f"{name}: {open_c} open, {all_c} total" for name, open_c, all_c in rows)
 
-@mcp.tool
+@mcp.tool(title="Get Headings", annotations=_annotations("Get Headings", READ))
 async def get_headings(project_uuid: str = None, limit: int = None, offset: int = 0) -> ToolResult:
     """Get headings from Things
 
@@ -590,7 +610,7 @@ async def get_headings(project_uuid: str = None, limit: int = None, offset: int 
     return _paginate_result(headings, format_heading, limit, offset, "No headings found")
 
 # Search operations
-@mcp.tool
+@mcp.tool(title="Find To-Dos", annotations=_annotations("Find To-Dos", READ))
 async def search_todos(query: str, limit: int = None, offset: int = 0) -> ToolResult:
     """Search todos by title or notes
 
@@ -605,7 +625,7 @@ async def search_todos(query: str, limit: int = None, offset: int = 0) -> ToolRe
     todos = things.search(query, include_items=True)
     return _paginate_result(todos, format_todo, limit, offset, f"No todos found matching '{query}'")
 
-@mcp.tool
+@mcp.tool(title="Find Items", annotations=_annotations("Find Items", READ))
 async def search_advanced(
     status: str = None,
     start_date: str = None,
@@ -665,7 +685,7 @@ async def search_advanced(
     return _paginate_result(todos, format_todo, limit, offset, "No matching todos found")
 
 # Recent items
-@mcp.tool
+@mcp.tool(title="Get Recent Items", annotations=_annotations("Get Recent Items", READ))
 async def get_recent(period: str, limit: int = None, offset: int = 0) -> ToolResult:
     """Get open (incomplete) items created within a rolling time window, newest first
 
@@ -694,7 +714,7 @@ async def get_recent(period: str, limit: int = None, offset: int = 0) -> ToolRes
     return _paginate_result(todos, format_todo, limit, offset, f"No items found in the last {period}")
 
 # Things URL Scheme tools
-@mcp.tool
+@mcp.tool(title="Create To-Do", annotations=_annotations("Create To-Do", CREATE))
 async def add_todo(
     title: str,
     notes: str = None,
@@ -737,7 +757,7 @@ async def add_todo(
     url_scheme.execute_url(url)
     return f"Created new todo: {title}"
 
-@mcp.tool
+@mcp.tool(title="Create Area", annotations=_annotations("Create Area", CREATE))
 async def add_area(title: str) -> str:
     """Create a new Area in Things 3
 
@@ -750,7 +770,7 @@ async def add_area(title: str) -> str:
     area_id = url_scheme.add_area(title=title)
     return f"Created new area: {title} (id: {area_id})"
 
-@mcp.tool
+@mcp.tool(title="Edit Area", annotations=_annotations("Edit Area", EDIT))
 async def update_area(id: str, title: str = None, tags: List[str] = None) -> str:
     """Update an existing Area in Things 3 (rename and/or set tags)
 
@@ -777,7 +797,7 @@ async def update_area(id: str, title: str = None, tags: List[str] = None) -> str
         changed.append(f"tags={tags}")
     return f"Updated area {id}: {', '.join(changed)}"
 
-@mcp.tool
+@mcp.tool(title="Create Project", annotations=_annotations("Create Project", CREATE))
 async def add_project(
     title: str,
     notes: str = None,
@@ -814,7 +834,7 @@ async def add_project(
     url_scheme.execute_url(url)
     return f"Created new project: {title}"
 
-@mcp.tool
+@mcp.tool(title="Edit To-Do", annotations=_annotations("Edit To-Do", EDIT))
 async def update_todo(
     id: str,
     title: str = None,
@@ -876,7 +896,7 @@ async def update_todo(
     url_scheme.execute_url(url)
     return f"Updated todo with ID: {id}"
 
-@mcp.tool
+@mcp.tool(title="Edit To-Dos", annotations=_annotations("Edit To-Dos", EDIT))
 async def bulk_update_todos(
     ids: List[str],
     list: str = None,
@@ -957,7 +977,7 @@ async def bulk_update_todos(
     url_scheme.execute_url(url)
     return f"Submitted bulk update for {len(ids)} todos"
 
-@mcp.tool
+@mcp.tool(title="Edit Project", annotations=_annotations("Edit Project", EDIT))
 async def update_project(
     id: str,
     title: str = None,
@@ -994,7 +1014,7 @@ async def update_project(
     url_scheme.execute_url(url)
     return f"Updated project with ID: {id}"
 
-@mcp.tool
+@mcp.tool(title="Show Items", annotations=_annotations("Show Items", SHOW))
 async def show_item(
     id: str,
     query: str = None,
@@ -1015,7 +1035,7 @@ async def show_item(
     url_scheme.execute_url(url)
     return f"Showing item: {id}"
 
-@mcp.tool
+@mcp.tool(title="Search in Things", annotations=_annotations("Search in Things", SHOW))
 async def search_items(query: str) -> str:
     """Search for items in Things
 

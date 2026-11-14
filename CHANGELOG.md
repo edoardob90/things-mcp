@@ -10,6 +10,7 @@
 ### Features
 
 - **Repeating To-Dos**: New `get_repeating_templates` tool lists the templates of repeating to-dos, sorted by the date Things will generate the next instance, and `get_upcoming` now includes each template whose next instance is in the future. Both read through things.py 1.1.0's `is_repeating_template` option and `next_instance_start_date` field; the text output shows `Repeating: next instance YYYY-MM-DD` in place of the stored "Someday" list. ([#57][i57], follows up [#71][p71])
+- **Tool Titles and Annotations**: Every tool now has a human-readable title (e.g. "Create To-Do", "Find Items", "Edit Project", following the names of Things' own Shortcuts actions) and MCP behavior hints: `readOnlyHint` on the 18 read tools, `destructiveHint` on the update tools, and `openWorldHint: false` throughout. Clients such as Claude now show "Create To-Do" instead of `add_todo`, and can group read-only tools apart from ones that change data.
 
 ### Maintenance
 
