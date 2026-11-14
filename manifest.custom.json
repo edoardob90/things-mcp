@@ -1,0 +1,10 @@
+{
+  "name": "things-mcp-custom",
+  "display_name": "Things 3",
+  "description": "Read and manage Things 3 to-dos, projects, areas and tags",
+  "long_description": "View, create, update and search to-dos, projects, areas and tags in Things 3, including repeating to-dos. Built from the custom branch of github.com/edoardob90/things-mcp, a fork of hald/things-mcp.",
+  "author": {
+    "name": "Edoardo Baldi",
+    "url": "https://github.com/edoardob90/things-mcp"
+  }
+}
