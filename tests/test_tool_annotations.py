@@ -4,7 +4,8 @@ import pytest
 from things_mcp.server import mcp
 
 READ_ONLY = {
-    "get_inbox", "get_today", "get_upcoming", "get_anytime", "get_someday",
+    "get_inbox", "get_today", "get_upcoming", "get_repeating_templates",
+    "get_anytime", "get_someday",
     "get_logbook", "get_trash", "get_todos", "get_projects", "get_areas",
     "get_tags", "get_tagged_items", "get_tag_usage", "get_headings",
     "search_todos", "search_advanced", "get_recent",

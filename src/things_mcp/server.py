@@ -309,7 +309,7 @@ def _next_instance_sort_key(template):
     return (next_instance is None, str(next_instance or ''), (template.get('title') or '').lower())
 
 
-@mcp.tool
+@mcp.tool(title="Get Repeating To-Dos", annotations=_annotations("Get Repeating To-Dos", READ))
 async def get_repeating_templates(limit: int = None, offset: int = 0) -> ToolResult:
     """Get the templates of repeating todos: the rule items Things generates each instance from
 
